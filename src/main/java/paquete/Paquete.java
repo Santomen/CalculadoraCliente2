@@ -1,4 +1,4 @@
-package com.example.calculadoracliente;
+package paquete;
 
 import java.io.Serializable;
 

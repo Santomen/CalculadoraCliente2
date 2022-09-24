@@ -6,4 +6,6 @@ module com.example.calculadoracliente {
 
     opens com.example.calculadoracliente to javafx.fxml;
     exports com.example.calculadoracliente;
+    exports paquete;
+    opens paquete to javafx.fxml;
 }

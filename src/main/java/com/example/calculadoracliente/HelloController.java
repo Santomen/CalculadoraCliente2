@@ -1,6 +1,11 @@
 package com.example.calculadoracliente;
 
-import com.example.calculadoracliente.Paquete;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import paquete.Paquete;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -13,17 +18,22 @@ import javafx.scene.layout.VBox;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
 import static java.lang.Integer.parseInt;
 
 public class HelloController implements Runnable{
-
+    @FXML
+    private Label lblCalcuN;
     @FXML
     private VBox VB;
 
     @FXML
     private ScrollPane sc;
+    int nodo=0;
 
+    List<String> resultados=new ArrayList<>();
     private Paquete paquete=new Paquete();
     void actualizar_pantalla(){
         pantalla.setText(paquete.getCadena());
@@ -42,7 +52,7 @@ public class HelloController implements Runnable{
 
     @FXML
     void mandar_server(ActionEvent event) throws IOException {
-        Socket enviaReceptor=new Socket("127.0.0.1",14502);
+        Socket enviaReceptor=new Socket("127.0.0.1",nodo);
         ObjectOutputStream paqueteReenvio=new ObjectOutputStream(enviaReceptor.getOutputStream());
         paquete.setCodigo(0);
         paqueteReenvio.writeObject(paquete);
@@ -144,10 +154,27 @@ public class HelloController implements Runnable{
     public void run(){
         //Server socket pondra a la app a la escucha de un puerto
         boolean ban=true;
-        try{
-            ServerSocket servidor=new ServerSocket(14002);
-            //ahora que acepte cualquier conexion que venga del exterior con el metodo accept
+        int puertos_clientes[]={14000,14001,14002,14003,14004,14005,14006};
+        ServerSocket servidor = null;
 
+        int puerto_celula=0;
+        for(int puerto:puertos_clientes){
+            try{servidor=new ServerSocket(puerto);
+                puerto_celula=puerto;
+                nodo=puerto+1000;
+                Platform.runLater(()->{
+                    lblCalcuN.setText("Calculadora: "+String.valueOf(puerto));
+                });
+                break;
+            }
+            catch(IOException e){
+                System.out.println(e);
+
+            }
+        }
+
+        try{
+            //ahora que acepte cualquier conexion que venga del exterior con el metodo accept
             while(ban){
                 Socket misocket=servidor.accept();//aceptara las conexiones que vengan del exterior
                 ObjectInputStream flujo_entrada=new ObjectInputStream(misocket.getInputStream());
@@ -156,10 +183,13 @@ public class HelloController implements Runnable{
                     paquete.setCadena(mensaje.getCadena());
                     //CONTENIDO CHAT
                     //System.out.println(mensaje);
-                    pantalla=new Label(mensaje.getCadena());
+
+                    //System.out.println("memoria pantalla: "+pantalla+" memoria VB "+VB);
                     Platform.runLater(()->{
-                        VB.getChildren().add(pantalla);
+                        pantalla.setText(mensaje.getCadena());
+                        //VB.getChildren().add(new Label(mensaje.getCadena()));
                     });
+                    resultados.add(mensaje.getCadena());
                     VB.heightProperty().addListener(new ChangeListener<Number>() {
                         @Override
                         public void changed(ObservableValue<? extends Number> observableValue, Number number, Number t1) {
@@ -170,7 +200,6 @@ public class HelloController implements Runnable{
                 else{
                     System.out.println("LLego un mensaje que el cliente no puede procesar");
                 }
-
                 flujo_entrada.close();
                 misocket.close();
             }
@@ -182,5 +211,27 @@ public class HelloController implements Runnable{
             throw new RuntimeException(e);
         }
     }
+    @FXML
+    void historial(ActionEvent event) throws IOException {
+        /*FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("HistorialView.fxml"));
+        Parent root =fxmlLoader.load();
+        HistorialController historialController=fxmlLoader.getController();
+        Scene scene=new Scene(root);
+        Stage stage1=new Stage();
+        stage1.initModality(Modality.APPLICATION_MODAL);
+        stage1.setScene(scene);
+        historialController.cargarResultados(resultados);
+        stage1.showAndWait();*/
+        FXMLLoader fxmlLoader = new FXMLLoader(HelloApplication.class.getResource("HistorialView.fxml"));
+        Parent root =fxmlLoader.load();
+        Scene scene=new Scene(root);
+        Stage stage1=new Stage();
+        stage1.initModality(Modality.APPLICATION_MODAL);
+        stage1.setScene(scene);
+        HistorialController historialController=fxmlLoader.getController();
+        System.out.println(historialController);
+        historialController.cargarResultados(resultados);
+        stage1.showAndWait();
 
+    }
 }
